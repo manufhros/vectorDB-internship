@@ -138,7 +138,7 @@ library = client.create_library(LibraryCreate(name="Test"))
 
 ### End-to-end SDK Test
 ```bash
-pytest vector_store_sdk/test_sdk_e2e.py -v
+pytest vector_store_sdk/test_sdk_tutorial_flow.py -v
 ```
 
 ### SDK Documentation
