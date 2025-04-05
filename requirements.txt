@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+numpy
+cohere
+python-dotenv
+pytest

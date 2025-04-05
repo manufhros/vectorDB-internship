@@ -1,0 +1,18 @@
+[project]
+name = "vectorstore-client"
+version = "0.1.0"
+description = "SDK to interact with a Vector Store API"
+authors = [{name = "Manu"}]
+requires-python = ">=3.8"
+dependencies = [
+    "requests",
+    "pydantic>=2.0"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::pydantic.PydanticDeprecatedSince20"
+]
