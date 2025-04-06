@@ -9,6 +9,7 @@ class LibraryBase(BaseModel):
     description: str | None = Field(
         None, example="Frequently asked questions from the support chatbot"
     )
+    index_type: str = "lsh"
 
 
 class LibraryCreate(LibraryBase):

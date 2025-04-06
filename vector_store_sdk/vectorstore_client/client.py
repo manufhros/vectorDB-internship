@@ -1,12 +1,17 @@
 from uuid import UUID
 
 import requests
-
-from vectorstore_client.constants import EMBEDDING_DIM  # EMBEDDING_DIM = 768
-from vectorstore_client.models.chunk import ChunkCreate, ChunkUpdate
-from vectorstore_client.models.document import DocumentCreate, DocumentUpdate
-from vectorstore_client.models.library import LibraryCreate, LibraryUpdate
-from vectorstore_client.models.query import QueryRequest, QueryResult
+from vector_store_sdk.vectorstore_client.constants import EMBEDDING_DIM
+from vector_store_sdk.vectorstore_client.models.chunk import ChunkCreate, ChunkUpdate
+from vector_store_sdk.vectorstore_client.models.document import (
+    DocumentCreate,
+    DocumentUpdate,
+)
+from vector_store_sdk.vectorstore_client.models.library import (
+    LibraryCreate,
+    LibraryUpdate,
+)
+from vector_store_sdk.vectorstore_client.models.query import QueryRequest, QueryResult
 
 
 class VectorStoreClient:

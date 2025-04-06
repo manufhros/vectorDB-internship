@@ -9,10 +9,11 @@ class LibraryBase(BaseModel):
     description: str | None = Field(
         None, example="Frequently asked questions from the support chatbot"
     )
+    index_type: str = "lsh"
 
 
 class LibraryCreate(LibraryBase):
-    pass  # Igual que LibraryBase, pero se puede extender en el futuro
+    pass  # Same as LibraryBase, but can be extended in the future
 
 
 class LibraryUpdate(BaseModel):

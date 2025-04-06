@@ -1,34 +1,34 @@
 import json
-import os
-import pickle
-from pathlib import Path
 from uuid import UUID
 
+from vector_store.app.constants import DATA_DIR, LSH_INDEX_FILE
 from vector_store.app.db.lsh_index import LSHIndex
 from vector_store.app.models.chunk import Chunk
 from vector_store.app.models.document import Document
 from vector_store.app.models.library import Library
 
-DATA_DIR = Path("data")
-DATA_DIR.mkdir(exist_ok=True)
-LSH_INDEX_PATH = "data/lsh_indices.pkl"
 
-
-# DB Data Persistance
+# DB Data Persistence
 def save_data(libraries, documents, chunks):
     with open(DATA_DIR / "libraries.json", "w") as f:
         json.dump(
-            [lib.model_dump(mode="json") for lib in libraries.values()], f, indent=2
+            [lib.model_dump(mode="json") for lib in libraries.values()],
+            f,
+            indent=2,
         )
 
     with open(DATA_DIR / "documents.json", "w") as f:
         json.dump(
-            [doc.model_dump(mode="json") for doc in documents.values()], f, indent=2
+            [doc.model_dump(mode="json") for doc in documents.values()],
+            f,
+            indent=2,
         )
 
     with open(DATA_DIR / "chunks.json", "w") as f:
         json.dump(
-            [chunk.model_dump(mode="json") for chunk in chunks.values()], f, indent=2
+            [chunk.model_dump(mode="json") for chunk in chunks.values()],
+            f,
+            indent=2,
         )
 
 
@@ -51,14 +51,22 @@ def load_data():
     return libraries, documents, chunks
 
 
-# LSH Index Persistance
-def save_indices(indices: dict[UUID, LSHIndex]) -> None:
-    with open(LSH_INDEX_PATH, "wb") as f:
-        pickle.dump(indices, f)
+# LSH Index Persistence
+def save_indices(indices: dict[UUID, object]) -> None:
+    """Saves persistent LSH indexes to disk."""
+    serializable = {
+        str(lib_id): index.to_dict()
+        for lib_id, index in indices.items()
+        if isinstance(index, LSHIndex)
+    }
+    with open(LSH_INDEX_FILE, "w") as f:
+        json.dump(serializable, f)
 
 
-def load_indices() -> dict[UUID, LSHIndex]:
-    if not os.path.exists(LSH_INDEX_PATH):
+def load_lsh() -> dict[UUID, LSHIndex]:
+    """Loads all persisted LSH indexes from disk."""
+    if not LSH_INDEX_FILE.exists():
         return {}
-    with open(LSH_INDEX_PATH, "rb") as f:
-        return pickle.load(f)
+    with open(LSH_INDEX_FILE) as f:
+        raw = json.load(f)
+    return {UUID(lib_id): LSHIndex.from_dict(data) for lib_id, data in raw.items()}

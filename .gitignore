@@ -3,46 +3,61 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# C extensions
+*.so
+
 # Virtual environment
+.venv/
 venv/
+ENV/
+env/
+.uv/
+
+# Environment variable files
 .env
 .env.*
 
-# Pytest cache
+# Editor / IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+
+# Logs and caches
+*.log
+*.sqlite3
+*.db
+*.pid
+*.pid.lock
+*.coverage
+coverage.xml
+.cache/
+*.mypy_cache/
+*.pytest_cache/
 .pytest_cache/
 
-# VS Code settings
-.vscode/
-
-# uv/poetry lock
-.uv/
-poetry.lock
-
-# Distribution / packaging
-build/
+# pyproject build artifacts
 dist/
+build/
 *.egg-info/
-*.egg
 
-# Logs and outputs
-*.log
-*.out
+# Data folder (user data and index persistence)
+data/
 
-# OS files
-.DS_Store
-Thumbs.db
+# Jupyter Notebook checkpoints (if ever used)
+.ipynb_checkpoints/
 
-# Helm / Kubernetes artifacts
-vector-store/charts/
+# Docker
+**/__docker_context__/
+docker-compose.override.yml
+
+# Helm chart artifacts
 *.tgz
 
-# Python SQLite DBs (if you add one)
-*.sqlite3
-
-# Coverage reports
-htmlcov/
-.coverage
-.coverage.*
-
-# Jupyter (if ever added)
-.ipynb_checkpoints/
+# Others (common)
+*.bak
+*.swp
+*.tmp

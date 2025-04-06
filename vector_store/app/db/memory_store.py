@@ -8,12 +8,10 @@ from dotenv import load_dotenv
 from fastapi import HTTPException
 
 from vector_store.app.constants import EMBEDDING_DIM
-
-# from vector_store.app.db.index import BruteForceIndex
-from vector_store.app.db.lsh_index import LSHIndex
+from vector_store.app.db.index_factory import IndexFactory
 from vector_store.app.db.persistence import (
     load_data,
-    load_indices,
+    load_lsh,
     save_data,
     save_indices,
 )
@@ -29,14 +27,22 @@ logger = logging.getLogger(__name__)
 
 
 class InMemoryStore:
-    def __init__(self):
+    def __init__(self, index_type: str = "lsh"):
         self.libraries, self.documents, self.chunks = load_data()
-        self.lsh_indices = load_indices()
+        saved_lsh_indices = load_lsh()
+        self.indices = {}
+        for lib_id, lib in self.libraries.items():
+            if lib.index_type == "lsh":
+                self.indices[lib_id] = saved_lsh_indices.get(
+                    lib_id, IndexFactory.create(index_type="lsh", dim=1024)
+                )
+            else:
+                self.indices[lib_id] = IndexFactory.create(index_type=lib.index_type)
 
     def save(self):
-        print("📦 Saving data to disk...")
+        logger.info("📦 Saving data to disk...")
         save_data(self.libraries, self.documents, self.chunks)
-        save_indices(self.lsh_indices)
+        save_indices(self.indices)
 
     # Library Methods
     def create_library(self, data: LibraryCreate) -> Library:
@@ -46,9 +52,13 @@ class InMemoryStore:
             name=data.name,
             description=data.description,
             created_at=datetime.now(timezone.utc),
+            index_type=data.index_type,
         )
         self.libraries[library_id] = library
-        self.lsh_indices[library_id] = LSHIndex(dim=EMBEDDING_DIM)
+        self.indices[library_id] = IndexFactory.create(
+            index_type=data.index_type,
+            dim=EMBEDDING_DIM,
+        )
         self.save()
         return library
 
@@ -68,7 +78,7 @@ class InMemoryStore:
         for doc_id in documents_to_delete:
             self.delete_document(doc_id)
         self.libraries.pop(library_id)
-        self.lsh_indices.pop(library_id, None)
+        self.indices.pop(library_id, None)
 
     def update_library(self, library_id: UUID, data: LibraryUpdate) -> Library | None:
         library = self.libraries.get(library_id)
@@ -183,7 +193,7 @@ class InMemoryStore:
         self.chunks[chunk_id] = chunk
 
         # Add to the LSH index of the corresponding library
-        self.lsh_indices[document.library_id].add(chunk_id, embedding)
+        self.indices[document.library_id].add(chunk_id, embedding)
 
         return chunk
 
@@ -222,7 +232,7 @@ class InMemoryStore:
         return updated_chunk
 
     def query_chunks(self, library_id: UUID, query: QueryRequest) -> list[QueryResult]:
-        print("🚨 query_chunks() called!")
+        logger.info("🚨 query_chunks() called!")
         if library_id not in self.libraries:
             raise HTTPException(status_code=404, detail="Library not found")
 
@@ -230,7 +240,7 @@ class InMemoryStore:
             f"🔍 Running query in library {library_id} with vector {query.embedding}"
         )
 
-        index = self.lsh_indices.get(library_id)
+        index = self.indices.get(library_id)
         if not index:
             raise HTTPException(
                 status_code=500, detail="LSH index not found for library"

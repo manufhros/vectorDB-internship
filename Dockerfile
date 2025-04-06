@@ -3,15 +3,17 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Instala dependencias
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv
+RUN pip install uv
 
-# Copia el código
+# Copy everything before installing
 COPY . .
 
-# Expone el puerto de FastAPI
+# Install dependencies (editable mode)
+RUN uv pip install --no-cache --system --editable .
+
+# FastAPI Port
 EXPOSE 8000
 
-# Comando para lanzar la API
+# Launch API
 CMD ["uvicorn", "vector_store.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

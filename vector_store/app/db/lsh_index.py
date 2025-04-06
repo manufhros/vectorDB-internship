@@ -1,9 +1,14 @@
+# vector_store/app/db/lsh_index.py
+
+from typing import Any
 from uuid import UUID
 
 import numpy as np
 
+from vector_store.app.db.index import Index
 
-class LSHIndex:
+
+class LSHIndex(Index):
     def __init__(self, dim: int, num_tables: int = 5, num_hashes: int = 10):
         self.dim = dim
         self.num_tables = num_tables
@@ -21,18 +26,28 @@ class LSHIndex:
     def add(self, vector_id: UUID, vector: list[float]) -> None:
         vec_np = np.array(vector)
         self.vectors[vector_id] = vec_np
-        for table, planes in zip(self.tables, self.hyperplanes, strict=False):
+        for i, table in enumerate(self.tables):
+            planes = self.hyperplanes[i]
             key = self._hash(vec_np, planes)
             table.setdefault(key, []).append(vector_id)
+
+    def remove(self, vector_id: UUID) -> None:
+        self.vectors.pop(vector_id, None)
+        for table in self.tables:
+            keys_to_remove = [k for k, ids in table.items() if vector_id in ids]
+            for k in keys_to_remove:
+                table[k].remove(vector_id)
+                if not table[k]:
+                    del table[k]
 
     def search(self, query_vector: list[float], k: int = 3) -> list[tuple[UUID, float]]:
         query_np = np.array(query_vector)
         candidates = set()
-        for table, planes in zip(self.tables, self.hyperplanes, strict=False):
+        for i, table in enumerate(self.tables):
+            planes = self.hyperplanes[i]
             key = self._hash(query_np, planes)
             candidates.update(table.get(key, []))
 
-        # Compute cosine similarity with candidates
         def cosine_sim(a, b):
             return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
@@ -42,3 +57,33 @@ class LSHIndex:
         ]
         scored.sort(key=lambda x: -x[1])
         return scored[:k]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "dim": self.dim,
+            "num_tables": self.num_tables,
+            "num_hashes": self.num_hashes,
+            "tables": [
+                {k: [str(uid) for uid in v] for k, v in table.items()}
+                for table in self.tables
+            ],
+            "hyperplanes": [plane.tolist() for plane in self.hyperplanes],
+            "vectors": {str(uid): vec.tolist() for uid, vec in self.vectors.items()},
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "LSHIndex":
+        index = cls(
+            dim=data["dim"],
+            num_tables=data["num_tables"],
+            num_hashes=data["num_hashes"],
+        )
+        index.tables = [
+            {k: [UUID(uid) for uid in v] for k, v in table.items()}
+            for table in data["tables"]
+        ]
+        index.hyperplanes = [np.array(plane) for plane in data["hyperplanes"]]
+        index.vectors = {
+            UUID(uid): np.array(vec) for uid, vec in data["vectors"].items()
+        }
+        return index
