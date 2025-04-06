@@ -1,0 +1,16 @@
+[project]
+name = "vectordb"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "cohere>=5.14.2",
+    "fastapi>=0.115.12",
+    "numpy>=2.2.4",
+    "pydantic>=2.11.2",
+    "pytest>=8.3.5",
+    "python-dotenv>=1.1.0",
+    "requests>=2.32.3",
+    "uvicorn>=0.34.0",
+]
