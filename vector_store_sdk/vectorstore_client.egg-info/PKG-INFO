@@ -1,8 +1,0 @@
-Metadata-Version: 2.4
-Name: vectorstore-client
-Version: 0.1.0
-Summary: SDK to interact with a Vector Store API
-Author: Manu
-Requires-Python: >=3.8
-Requires-Dist: requests
-Requires-Dist: pydantic>=2.0
