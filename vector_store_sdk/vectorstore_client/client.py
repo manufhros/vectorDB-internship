@@ -1,15 +1,15 @@
-import requests
-from typing import List, Optional
 from uuid import UUID
-from vectorstore_client.models.library import LibraryCreate, Library, LibraryUpdate
-from vectorstore_client.models.document import DocumentCreate, Document, DocumentUpdate
-from vectorstore_client.models.chunk import ChunkCreate, Chunk, ChunkUpdate
-from vectorstore_client.models.query import QueryRequest, QueryResult
+
+import requests
+
 from vectorstore_client.constants import EMBEDDING_DIM  # EMBEDDING_DIM = 768
+from vectorstore_client.models.chunk import ChunkCreate, ChunkUpdate
+from vectorstore_client.models.document import DocumentCreate, DocumentUpdate
+from vectorstore_client.models.library import LibraryCreate, LibraryUpdate
+from vectorstore_client.models.query import QueryRequest, QueryResult
 
 
 class VectorStoreClient:
-
     """
     A Python SDK client for interacting with the Vector Store API.
 
@@ -38,13 +38,15 @@ class VectorStoreClient:
         response.raise_for_status()
         return response.json()
 
-    def list_libraries(self) -> List[dict]:
+    def list_libraries(self) -> list[dict]:
         response = requests.get(f"{self.base_url}/libraries/")
         response.raise_for_status()
         return response.json()
-    
+
     def update_library(self, library_id: UUID, data: LibraryUpdate) -> dict:
-        response = requests.put(f"{self.base_url}/libraries/{library_id}", json=data.model_dump())
+        response = requests.put(
+            f"{self.base_url}/libraries/{library_id}", json=data.model_dump()
+        )
         response.raise_for_status()
         return response.json()
 
@@ -52,41 +54,52 @@ class VectorStoreClient:
         response = requests.delete(f"{self.base_url}/libraries/{library_id}")
         response.raise_for_status()
 
-
-
     # Documents
     def create_document(self, library_id: UUID, data: DocumentCreate) -> dict:
-        response = requests.post(f"{self.base_url}/libraries/{library_id}/documents/", json=data.model_dump())
+        response = requests.post(
+            f"{self.base_url}/libraries/{library_id}/documents/", json=data.model_dump()
+        )
         response.raise_for_status()
         return response.json()
 
     def get_document(self, library_id: UUID, document_id: UUID) -> dict:
-        response = requests.get(f"{self.base_url}/libraries/{library_id}/documents/{document_id}")
+        response = requests.get(
+            f"{self.base_url}/libraries/{library_id}/documents/{document_id}"
+        )
         response.raise_for_status()
         return response.json()
 
-    def list_documents(self, library_id: UUID) -> List[dict]:
+    def list_documents(self, library_id: UUID) -> list[dict]:
         response = requests.get(f"{self.base_url}/libraries/{library_id}/documents/")
         response.raise_for_status()
         return response.json()
-    
-    def update_document(self, library_id: UUID, document_id: UUID, data: DocumentUpdate) -> dict:
-        response = requests.put(f"{self.base_url}/libraries/{library_id}/documents/{document_id}", json=data.model_dump())
+
+    def update_document(
+        self, library_id: UUID, document_id: UUID, data: DocumentUpdate
+    ) -> dict:
+        response = requests.put(
+            f"{self.base_url}/libraries/{library_id}/documents/{document_id}",
+            json=data.model_dump(),
+        )
         response.raise_for_status()
         return response.json()
 
     def delete_document(self, library_id: UUID, document_id: UUID) -> None:
-        response = requests.delete(f"{self.base_url}/libraries/{library_id}/documents/{document_id}")
+        response = requests.delete(
+            f"{self.base_url}/libraries/{library_id}/documents/{document_id}"
+        )
         response.raise_for_status()
-
-        
 
     # Chunks
     def create_chunk(self, document_id: UUID, data: ChunkCreate) -> dict:
         if data.embedding is not None and len(data.embedding) != EMBEDDING_DIM:
-            raise ValueError(f"Embedding must have {EMBEDDING_DIM} dimensions, got {len(data.embedding)}")
-        
-        response = requests.post(f"{self.base_url}/documents/{document_id}/chunks/", json=data.model_dump())
+            raise ValueError(
+                f"Embedding must have {EMBEDDING_DIM} dimensions, got {len(data.embedding)}"
+            )
+
+        response = requests.post(
+            f"{self.base_url}/documents/{document_id}/chunks/", json=data.model_dump()
+        )
         response.raise_for_status()
         return response.json()
 
@@ -95,13 +108,15 @@ class VectorStoreClient:
         response.raise_for_status()
         return response.json()
 
-    def list_chunks(self, document_id: UUID) -> List[dict]:
+    def list_chunks(self, document_id: UUID) -> list[dict]:
         response = requests.get(f"{self.base_url}/documents/{document_id}/chunks/")
         response.raise_for_status()
         return response.json()
-    
+
     def update_chunk(self, chunk_id: UUID, data: ChunkUpdate) -> dict:
-        response = requests.put(f"{self.base_url}/chunks/{chunk_id}", json=data.model_dump())
+        response = requests.put(
+            f"{self.base_url}/chunks/{chunk_id}", json=data.model_dump()
+        )
         response.raise_for_status()
         return response.json()
 
@@ -110,7 +125,9 @@ class VectorStoreClient:
         response.raise_for_status()
 
     # Query
-    def query(self, library_id: UUID, query: QueryRequest) -> List[QueryResult]:
-        response = requests.post(f"{self.base_url}/libraries/{library_id}/query/", json=query.model_dump())
+    def query(self, library_id: UUID, query: QueryRequest) -> list[QueryResult]:
+        response = requests.post(
+            f"{self.base_url}/libraries/{library_id}/query/", json=query.model_dump()
+        )
         response.raise_for_status()
         return [QueryResult(**r) for r in response.json()]

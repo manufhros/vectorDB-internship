@@ -1,26 +1,32 @@
-from typing import Dict, List, Optional
-from uuid import UUID, uuid4
-from datetime import datetime, timezone
-from fastapi import HTTPException
 import logging
-from vector_store.app.models.library import Library, LibraryCreate, LibraryUpdate
-from vector_store.app.models.document import Document, DocumentCreate, DocumentUpdate
-from vector_store.app.models.chunk import Chunk, ChunkCreate, ChunkUpdate
-from vector_store.app.models.query import QueryRequest, QueryResult
-#from vector_store.app.db.index import BruteForceIndex
-from vector_store.app.db.lsh_index import LSHIndex
-from vector_store.app.db.persistence import save_data, load_data, save_indices, load_indices
-from vector_store.app.constants import EMBEDDING_DIM
-
-
 import os
+from datetime import datetime, timezone
+from uuid import UUID, uuid4
+
 import cohere
 from dotenv import load_dotenv
+from fastapi import HTTPException
+
+from vector_store.app.constants import EMBEDDING_DIM
+
+# from vector_store.app.db.index import BruteForceIndex
+from vector_store.app.db.lsh_index import LSHIndex
+from vector_store.app.db.persistence import (
+    load_data,
+    load_indices,
+    save_data,
+    save_indices,
+)
+from vector_store.app.models.chunk import Chunk, ChunkCreate, ChunkUpdate
+from vector_store.app.models.document import Document, DocumentCreate, DocumentUpdate
+from vector_store.app.models.library import Library, LibraryCreate, LibraryUpdate
+from vector_store.app.models.query import QueryRequest, QueryResult
 
 load_dotenv()
 cohere_client = cohere.Client(os.environ["COHERE_API_KEY"])
 
 logger = logging.getLogger(__name__)
+
 
 class InMemoryStore:
     def __init__(self):
@@ -39,30 +45,32 @@ class InMemoryStore:
             id=library_id,
             name=data.name,
             description=data.description,
-            created_at=datetime.now(timezone.utc)
+            created_at=datetime.now(timezone.utc),
         )
         self.libraries[library_id] = library
         self.lsh_indices[library_id] = LSHIndex(dim=EMBEDDING_DIM)
         self.save()
         return library
 
-    def get_library(self, library_id: UUID) -> Optional[Library]:
+    def get_library(self, library_id: UUID) -> Library | None:
         return self.libraries.get(library_id)
 
-    def list_libraries(self) -> List[Library]:
+    def list_libraries(self) -> list[Library]:
         return list(self.libraries.values())
 
     def delete_library(self, library_id: UUID) -> None:
         if library_id not in self.libraries:
             logger.warning(f"Attempted to delete non-existent library {library_id}")
             return
-        documents_to_delete = [doc.id for doc in self.documents.values() if doc.library_id == library_id]
+        documents_to_delete = [
+            doc.id for doc in self.documents.values() if doc.library_id == library_id
+        ]
         for doc_id in documents_to_delete:
             self.delete_document(doc_id)
         self.libraries.pop(library_id)
         self.lsh_indices.pop(library_id, None)
 
-    def update_library(self, library_id: UUID, data: LibraryUpdate) -> Optional[Library]:
+    def update_library(self, library_id: UUID, data: LibraryUpdate) -> Library | None:
         library = self.libraries.get(library_id)
         if not library:
             return None
@@ -88,30 +96,36 @@ class InMemoryStore:
             description=data.description,
             id=document_id,
             library_id=library_id,
-            created_at=datetime.now(timezone.utc)
+            created_at=datetime.now(timezone.utc),
         )
         self.documents[document_id] = document
         return document
 
-    def get_document(self, document_id: UUID) -> Optional[Document]:
+    def get_document(self, document_id: UUID) -> Document | None:
         return self.documents.get(document_id)
 
-    def list_documents(self) -> List[Document]:
+    def list_documents(self) -> list[Document]:
         return list(self.documents.values())
 
-    def list_documents_by_library(self, library_id: UUID) -> List[Document]:
+    def list_documents_by_library(self, library_id: UUID) -> list[Document]:
         return [doc for doc in self.documents.values() if doc.library_id == library_id]
 
     def delete_document(self, document_id: UUID) -> None:
         if document_id not in self.documents:
             logger.warning(f"Attempted to delete non-existent document {document_id}")
             return
-        chunks_to_delete = [chunk.id for chunk in self.chunks.values() if chunk.document_id == document_id]
+        chunks_to_delete = [
+            chunk.id
+            for chunk in self.chunks.values()
+            if chunk.document_id == document_id
+        ]
         for chunk_id in chunks_to_delete:
             self.delete_chunk(chunk_id)
         self.documents.pop(document_id)
 
-    def update_document(self, document_id: UUID, data: DocumentUpdate) -> Optional[Document]:
+    def update_document(
+        self, document_id: UUID, data: DocumentUpdate
+    ) -> Document | None:
         document = self.documents.get(document_id)
         if not document:
             return None
@@ -140,7 +154,7 @@ class InMemoryStore:
         if data.embedding is not None and len(data.embedding) != EMBEDDING_DIM:
             raise HTTPException(
                 status_code=400,
-                detail=f"Embedding must be of length {EMBEDDING_DIM}, got {len(data.embedding)}"
+                detail=f"Embedding must be of length {EMBEDDING_DIM}, got {len(data.embedding)}",
             )
 
         embedding = data.embedding
@@ -148,12 +162,14 @@ class InMemoryStore:
             response = cohere_client.embed(
                 texts=[data.text],
                 input_type="search_document",
-                model="embed-english-v3.0"
+                model="embed-english-v3.0",
             )
             embedding = response.embeddings[0]
 
         if len(embedding) != EMBEDDING_DIM:
-            raise ValueError(f"Cohere returned embedding of length {len(embedding)} (expected {EMBEDDING_DIM})")
+            raise ValueError(
+                f"Cohere returned embedding of length {len(embedding)} (expected {EMBEDDING_DIM})"
+            )
 
         chunk_id = uuid4()
         chunk = Chunk(
@@ -162,7 +178,7 @@ class InMemoryStore:
             metadata=data.metadata or {},
             id=chunk_id,
             document_id=document_id,
-            created_at=datetime.now(timezone.utc)
+            created_at=datetime.now(timezone.utc),
         )
         self.chunks[chunk_id] = chunk
 
@@ -171,14 +187,16 @@ class InMemoryStore:
 
         return chunk
 
-    def get_chunk(self, chunk_id: UUID) -> Optional[Chunk]:
+    def get_chunk(self, chunk_id: UUID) -> Chunk | None:
         return self.chunks.get(chunk_id)
 
-    def list_chunks(self) -> List[Chunk]:
+    def list_chunks(self) -> list[Chunk]:
         return list(self.chunks.values())
 
-    def list_chunks_by_document(self, document_id: UUID) -> List[Chunk]:
-        return [chunk for chunk in self.chunks.values() if chunk.document_id == document_id]
+    def list_chunks_by_document(self, document_id: UUID) -> list[Chunk]:
+        return [
+            chunk for chunk in self.chunks.values() if chunk.document_id == document_id
+        ]
 
     def delete_chunk(self, chunk_id: UUID) -> None:
         if chunk_id not in self.chunks:
@@ -186,7 +204,7 @@ class InMemoryStore:
             return
         self.chunks.pop(chunk_id)
 
-    def update_chunk(self, chunk_id: UUID, data: ChunkUpdate) -> Optional[Chunk]:
+    def update_chunk(self, chunk_id: UUID, data: ChunkUpdate) -> Chunk | None:
         chunk = self.chunks.get(chunk_id)
         if not chunk:
             return None
@@ -203,16 +221,20 @@ class InMemoryStore:
         self.chunks[chunk_id] = updated_chunk
         return updated_chunk
 
-    def query_chunks(self, library_id: UUID, query: QueryRequest) -> List[QueryResult]:
+    def query_chunks(self, library_id: UUID, query: QueryRequest) -> list[QueryResult]:
         print("🚨 query_chunks() called!")
         if library_id not in self.libraries:
             raise HTTPException(status_code=404, detail="Library not found")
 
-        logger.info(f"🔍 Running query in library {library_id} with vector {query.embedding}")
+        logger.info(
+            f"🔍 Running query in library {library_id} with vector {query.embedding}"
+        )
 
         index = self.lsh_indices.get(library_id)
         if not index:
-            raise HTTPException(status_code=500, detail="LSH index not found for library")
+            raise HTTPException(
+                status_code=500, detail="LSH index not found for library"
+            )
 
         results = index.search(query.embedding, query.k)
 
@@ -221,7 +243,7 @@ class InMemoryStore:
                 chunk_id=chunk_id,
                 document_id=self.chunks[chunk_id].document_id,
                 score=min(score, 1.0),
-                text=self.chunks[chunk_id].text
+                text=self.chunks[chunk_id].text,
             )
             for chunk_id, score in results
         ]

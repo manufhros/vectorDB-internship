@@ -1,4 +1,3 @@
-import sys
 from vectorstore_client import VectorStoreClient
 
 if __name__ == "__main__":

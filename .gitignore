@@ -1,29 +1,48 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.sqlite3
-*.db
+*.py[cod]
+*$py.class
 
-# Environments
+# Virtual environment
 venv/
 .env
+.env.*
 
-# VSCode
+# Pytest cache
+.pytest_cache/
+
+# VS Code settings
 .vscode/
 
-# macOS
-.DS_Store
+# uv/poetry lock
+.uv/
+poetry.lock
 
-# Byte-compiled / optimized / DLL files
-*.so
-
-# Egg info
+# Distribution / packaging
+build/
+dist/
 *.egg-info/
+*.egg
 
-# Logs
+# Logs and outputs
 *.log
+*.out
 
-# Test cache
-.pytest_cache/
+# OS files
+.DS_Store
+Thumbs.db
+
+# Helm / Kubernetes artifacts
+vector-store/charts/
+*.tgz
+
+# Python SQLite DBs (if you add one)
+*.sqlite3
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# Jupyter (if ever added)
+.ipynb_checkpoints/

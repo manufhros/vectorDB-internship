@@ -1,8 +1,10 @@
-import numpy as np
 import heapq
 
+import numpy as np
+
+
 class BruteForceIndex:
-    def __init__(self, metric: str = 'euclidean'):
+    def __init__(self, metric: str = "euclidean"):
         self.vectors = []  # List of (id, vector)
         self.metric = metric
 
@@ -13,9 +15,9 @@ class BruteForceIndex:
         self.vectors = [(i, v) for (i, v) in self.vectors if i != id]
 
     def _distance(self, a, b):
-        if self.metric == 'euclidean':
+        if self.metric == "euclidean":
             return np.linalg.norm(a - b)
-        elif self.metric == 'cosine':
+        elif self.metric == "cosine":
             if not np.any(a) or not np.any(b):
                 return 1.0
             return 1 - np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))

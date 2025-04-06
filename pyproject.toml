@@ -1,16 +1,36 @@
 [project]
 name = "vectordb"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.13"
+description = "vectordb API"
+authors = [{name = "Manu"}]
+requires-python = ">=3.8"
 dependencies = [
-    "cohere>=5.14.2",
-    "fastapi>=0.115.12",
-    "numpy>=2.2.4",
-    "pydantic>=2.11.2",
-    "pytest>=8.3.5",
-    "python-dotenv>=1.1.0",
-    "requests>=2.32.3",
-    "uvicorn>=0.34.0",
+    "requests",
+    "pydantic>=2.0"
 ]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::pydantic.PydanticDeprecatedSince20"
+]
+[project.optional-dependencies]
+dev = ["black", "ruff"]
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+extend-exclude = ["vector_store_sdk/vectorstore_client.egg-info"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501", "F811"]
+
+[tool.ruff.format]
+quote-style = "double"

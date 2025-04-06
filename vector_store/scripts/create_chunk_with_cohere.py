@@ -1,7 +1,8 @@
-import cohere
-import requests
 import json
 import os
+
+import cohere
+import requests
 from dotenv import load_dotenv
 
 # --- CONFIGURATION ---
@@ -15,23 +16,17 @@ METADATA = {"section": "greeting"}
 # --- GET EMBEDDING FROM COHERE ---
 co = cohere.Client(COHERE_API_KEY)
 response = co.embed(
-    texts=[TEXT],
-    model="embed-english-v3.0",
-    input_type="search_document"
+    texts=[TEXT], model="embed-english-v3.0", input_type="search_document"
 )
 embedding = response.embeddings[0]
 
 # --- CREATE CHUNK VIA FASTAPI ---
-payload = {
-    "text": TEXT,
-    "embedding": embedding,
-    "metadata": METADATA
-}
+payload = {"text": TEXT, "embedding": embedding, "metadata": METADATA}
 
 res = requests.post(
     f"{API_BASE_URL}/documents/{DOCUMENT_ID}/chunks/",
     headers={"Content-Type": "application/json"},
-    data=json.dumps(payload)
+    data=json.dumps(payload),
 )
 
 # --- OUTPUT ---
@@ -40,6 +35,8 @@ print(json.dumps(res.json(), indent=2))
 
 # --- CURL EQUIVALENT ---
 print("\n💡 Equivalent curl command:\n")
-print(f"""curl -X POST {API_BASE_URL}/documents/{DOCUMENT_ID}/chunks/ \\
+print(
+    f"""curl -X POST {API_BASE_URL}/documents/{DOCUMENT_ID}/chunks/ \\
   -H "Content-Type: application/json" \\
-  -d '{json.dumps(payload)}'""")
+  -d '{json.dumps(payload)}'"""
+)
