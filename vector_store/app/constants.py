@@ -1,6 +1,8 @@
 from pathlib import Path
 
 EMBEDDING_DIM = 1024
+CHUNKS_LRU_CACHE_SIZE = 1000
+LSH_LRU_CACHE_SIZE = 10
 
 # Folder for persistent data
 DATA_DIR = Path("data")
