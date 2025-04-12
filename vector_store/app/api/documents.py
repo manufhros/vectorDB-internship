@@ -11,9 +11,7 @@ router = APIRouter(prefix="/libraries/{library_id}/documents", tags=["documents"
 
 
 @router.post("/", response_model=Document)
-def create_document(
-    library_id: UUID, data: DocumentCreate, db: Session = Depends(get_db)
-):
+def create_document(library_id: UUID, data: DocumentCreate, db: Session = Depends(get_db)):
     store = Store(db)
     return store.create_document(library_id, data)
 

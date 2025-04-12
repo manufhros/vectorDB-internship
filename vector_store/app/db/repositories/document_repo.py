@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import List  # 👈 Añade esto
 
 from sqlalchemy.orm import Session
 
@@ -12,7 +13,7 @@ class DocumentRepository:
 
     def create(self, library_id: UUID, data: DocumentCreate) -> Document:
         document = Document(
-            library_id=library_id,
+            library_id=str(library_id),
             title=data.title,
             source=data.source,
             description=data.description,
@@ -23,10 +24,13 @@ class DocumentRepository:
         return document
 
     def get(self, document_id: UUID) -> Document | None:
-        return self.db.query(Document).filter_by(id=document_id).first()
+        return self.db.query(Document).filter_by(id=str(document_id)).first()
 
-    def list(self) -> list[Document]:
+    def list(self) -> List[Document]:
         return self.db.query(Document).all()
+    
+    def list_by_library(self, library_id: UUID) -> List[Document]:  # 👈 Y esto
+        return self.db.query(Document).filter_by(library_id=str(library_id)).all()
 
     def update(
         self, document_id: UUID, data: DocumentUpdate, library_id: UUID | None = None
@@ -36,7 +40,7 @@ class DocumentRepository:
             return None
 
         if library_id is not None:
-            document.library_id = library_id
+            document.library_id = str(library_id)
         if data.title is not None:
             document.title = data.title
         if data.source is not None:

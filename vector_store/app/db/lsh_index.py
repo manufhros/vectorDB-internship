@@ -25,6 +25,7 @@ class LSHIndex(Index):
 
     def add(self, vector_id: UUID, vector: list[float]) -> None:
         vec_np = np.array(vector)
+        vec_np = vec_np / np.linalg.norm(vec_np)  # Normalize the vector
         self.vectors[vector_id] = vec_np
         for i, table in enumerate(self.tables):
             planes = self.hyperplanes[i]
@@ -42,6 +43,7 @@ class LSHIndex(Index):
 
     def search(self, query_vector: list[float], k: int = 3) -> list[tuple[UUID, float]]:
         query_np = np.array(query_vector)
+        query_np = query_np / np.linalg.norm(query_np)  # Normalize the query vector
         candidates = set()
         for i, table in enumerate(self.tables):
             planes = self.hyperplanes[i]

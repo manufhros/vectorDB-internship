@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from vector_store.app.db.models.chunk import Chunk
+from vector_store.app.db.models.document import Document
 from vector_store.app.models.chunk import ChunkCreate, ChunkUpdate
 
 
@@ -12,10 +13,10 @@ class ChunkRepository:
 
     def create(self, document_id: UUID, data: ChunkCreate) -> Chunk:
         chunk = Chunk(
-            document_id=document_id,
+            document_id=str(document_id),
             text=data.text,
             embedding=data.embedding,
-            metadata=data.metadata or {},
+            meta=data.meta or {},
         )
         self.db.add(chunk)
         self.db.commit()
@@ -32,7 +33,7 @@ class ChunkRepository:
         return (
             self.db.query(Chunk)
             .join(Document, Chunk.document_id == Document.id)
-            .filter(Document.library_id == library_id)
+            .filter(Document.library_id == str(library_id))
             .all()
         )
 
@@ -45,8 +46,8 @@ class ChunkRepository:
             chunk.text = data.text
         if data.embedding is not None:
             chunk.embedding = data.embedding
-        if data.metadata is not None:
-            chunk.metadata = data.metadata
+        if data.meta is not None:
+            chunk.meta = data.meta
 
         self.db.commit()
         self.db.refresh(chunk)

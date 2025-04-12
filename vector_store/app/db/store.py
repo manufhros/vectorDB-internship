@@ -17,6 +17,7 @@ from vector_store.app.models.chunk import ChunkCreate, ChunkUpdate
 from vector_store.app.models.document import DocumentCreate, DocumentUpdate
 from vector_store.app.models.library import LibraryCreate, LibraryUpdate
 from vector_store.app.models.query import QueryRequest, QueryResult
+from vector_store.app.db.repositories.lsh_index_repo import LSHIndexRepository
 
 load_dotenv()
 cohere_client = cohere.Client(os.environ["COHERE_API_KEY"])
@@ -30,14 +31,11 @@ class Store:
         self.library_repo = LibraryRepository(db)
         self.document_repo = DocumentRepository(db)
         self.chunk_repo = ChunkRepository(db)
+        self.lsh_repo = LSHIndexRepository(db)
 
     # Library Methods
     def create_library(self, data: LibraryCreate):
-        return self.library_repo.create(
-            name=data.name,
-            description=data.description,
-            index_type=data.index_type,
-        )
+        return self.library_repo.create(data)
 
     def get_library(self, library_id: UUID):
         return self.library_repo.get(library_id)
@@ -54,22 +52,13 @@ class Store:
     def update_library(self, library_id: UUID, data: LibraryUpdate):
         if not self.library_repo.get(library_id):
             raise HTTPException(status_code=404, detail="Library not found")
-        return self.library_repo.update(
-            library_id,
-            name=data.name,
-            description=data.description,
-        )
+        return self.library_repo.update(library_id, data)
 
     # Document Methods
     def create_document(self, library_id: UUID, data: DocumentCreate):
         if not self.library_repo.get(library_id):
             raise HTTPException(status_code=404, detail="Library not found")
-        return self.document_repo.create(
-            library_id=library_id,
-            title=data.title,
-            source=data.source,
-            description=data.description,
-        )
+        return self.document_repo.create(library_id, data)
 
     def get_document(self, document_id: UUID):
         doc = self.document_repo.get(document_id)
@@ -79,17 +68,16 @@ class Store:
 
     def list_documents(self):
         return self.document_repo.list()
+    
+    def list_documents_by_library(self, library_id: UUID):
+        if not self.library_repo.get(library_id):
+            raise HTTPException(status_code=404, detail="Library not found")
+        return self.document_repo.list_by_library(library_id)
 
     def update_document(self, document_id: UUID, data: DocumentUpdate):
         if not self.document_repo.get(document_id):
             raise HTTPException(status_code=404, detail="Document not found")
-        return self.document_repo.update(
-            document_id,
-            library_id=data.library_id,
-            title=data.title,
-            source=data.source,
-            description=data.description,
-        )
+        return self.document_repo.update(document_id, data)
 
     def delete_document(self, document_id: UUID):
         if not self.document_repo.get(document_id):
@@ -117,6 +105,7 @@ class Store:
                     model="embed-english-v3.0",
                 )
                 embedding = response.embeddings[0]
+                print(embedding)
             except Exception:
                 logger.exception("Error generating embedding with Cohere")
                 raise HTTPException(
@@ -128,12 +117,9 @@ class Store:
                 f"Cohere returned embedding of length {len(embedding)} (expected {EMBEDDING_DIM})"
             )
 
-        chunk = self.chunk_repo.create(
-            document_id=document_id,
-            text=data.text,
-            embedding=embedding,
-            metadata=data.metadata,
-        )
+        data.embedding = embedding
+        chunk = self.chunk_repo.create(document_id, data)
+
         chunk_cache[chunk.id] = chunk
         index = index_cache.get(document.library_id)
         if index:
@@ -160,12 +146,8 @@ class Store:
     def update_chunk(self, chunk_id: UUID, data: ChunkUpdate):
         if not self.chunk_repo.get(chunk_id):
             raise HTTPException(status_code=404, detail="Chunk not found")
-        return self.chunk_repo.update(
-            chunk_id,
-            text=data.text,
-            embedding=data.embedding,
-            metadata=data.metadata,
-        )
+        return self.chunk_repo.update(chunk_id, data)
+
 
     def delete_chunk(self, chunk_id: UUID):
         chunk = self.chunk_repo.get(chunk_id)
@@ -177,14 +159,13 @@ class Store:
 
     # Query
     def query_chunks(self, library_id: UUID, query: QueryRequest) -> list[QueryResult]:
-
         # 1. Verifies if the library exists
         library = self.library_repo.get(library_id)
         if not library:
             raise HTTPException(status_code=404, detail="Library not found")
 
         # 2. Reuses the index if it exists
-        index: Index = index_cache.get(library_id)
+        index = index_cache.get(library_id)
         if index is None:
             # 2a. Creates a new index
             index = IndexFactory.create(index_type=library.index_type)
@@ -196,10 +177,39 @@ class Store:
             # 2d. Caches
             index_cache[library_id] = index
 
-        # 3. Executes the query
-        results = index.search(query.embedding, query.k)
+        # 3. Generate embedding if not provided
+        embedding = query.embedding
+        if embedding is None:
+            if not query.text:
+                raise HTTPException(status_code=400, detail="Either 'embedding' or 'text' must be provided")
+            try:
+                response = cohere_client.embed(
+                    texts=[query.text],
+                    input_type="search_query",
+                    model="embed-english-v3.0",
+                )
+                embedding = response.embeddings[0]
+            except Exception:
+                logger.exception("Error generating embedding with Cohere")
+                raise HTTPException(status_code=500, detail="Failed to generate embedding")
 
-        # 4. Restores the chunks from the database
+        # 4. Validate embedding dimensionality
+        if len(embedding) != EMBEDDING_DIM:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Embedding must have dimension {EMBEDDING_DIM}, but got {len(embedding)}"
+            )
+
+        # 5. Executes the query
+        try:
+            results = index.search(embedding, query.k)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Error during similarity search: {str(e)}"
+            )
+
+        # 6. Restores the chunks from the database
         output = []
         for chunk_id, score in results:
             chunk = self.get_chunk(chunk_id)
@@ -211,7 +221,7 @@ class Store:
                     document_id=chunk.document_id,
                     score=min(score, 1.0),
                     text=chunk.text,
-                    metadata=chunk.metadata,
+                    meta=chunk.meta,
                 )
             )
 
