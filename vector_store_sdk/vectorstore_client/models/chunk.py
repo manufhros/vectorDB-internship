@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class ChunkBase(BaseModel):
     text: str = Field(..., example="Refunds are processed within 5 business days.")
     embedding: list[float] | None = Field(None, example=[0.123, -0.456, 0.789])
-    metadata: dict[str, str] | None = Field(
+    meta: dict[str, str] | None = Field(
         default_factory=dict, example={"author": "admin", "language": "en"}
     )
 
@@ -19,7 +19,7 @@ class ChunkCreate(ChunkBase):
 class ChunkUpdate(BaseModel):
     text: str | None = None
     embedding: list[float] | None = None
-    metadata: dict[str, str] | None = None
+    meta: dict[str, str] | None = None
 
 
 class Chunk(ChunkBase):

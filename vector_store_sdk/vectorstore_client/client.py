@@ -130,7 +130,9 @@ class VectorStoreClient:
         response.raise_for_status()
 
     # Query
-    def query(self, library_id: UUID, query: QueryRequest) -> list[QueryResult]:
+    def query(self, library_id: UUID, query: str | QueryRequest, k: int = 3) -> list[QueryResult]:
+        if isinstance(query, str):
+            query = QueryRequest(text=query, k=k)
         response = requests.post(
             f"{self.base_url}/libraries/{library_id}/query/", json=query.model_dump()
         )
