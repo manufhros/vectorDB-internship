@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON
-from sqlalchemy.orm import relationship
+from sqlalchemy import JSON, Column, Integer, String
+
 from vector_store.app.db.base import Base
+
 
 class LSHIndexModel(Base):
     __tablename__ = "lsh_indices"

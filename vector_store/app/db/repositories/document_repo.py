@@ -1,5 +1,5 @@
+import builtins
 from uuid import UUID
-from typing import List  # 👈 Añade esto
 
 from sqlalchemy.orm import Session
 
@@ -26,10 +26,10 @@ class DocumentRepository:
     def get(self, document_id: UUID) -> Document | None:
         return self.db.query(Document).filter_by(id=str(document_id)).first()
 
-    def list(self) -> List[Document]:
+    def list(self) -> list[Document]:
         return self.db.query(Document).all()
-    
-    def list_by_library(self, library_id: UUID) -> List[Document]:  # 👈 Y esto
+
+    def list_by_library(self, library_id: UUID) -> builtins.list[Document]:  # 👈 Y esto
         return self.db.query(Document).filter_by(library_id=str(library_id)).all()
 
     def update(

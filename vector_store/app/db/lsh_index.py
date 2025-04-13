@@ -42,6 +42,8 @@ class LSHIndex(Index):
                     del table[k]
 
     def search(self, query_vector: list[float], k: int = 3) -> list[tuple[UUID, float]]:
+        print("🔍 Searching in LSH Index...")
+
         query_np = np.array(query_vector)
         query_np = query_np / np.linalg.norm(query_np)  # Normalize the query vector
         candidates = set()
@@ -49,6 +51,13 @@ class LSHIndex(Index):
             planes = self.hyperplanes[i]
             key = self._hash(query_np, planes)
             candidates.update(table.get(key, []))
+
+        print(f"🧠 Found {len(candidates)} candidate(s) in buckets")
+
+        # If no candidates, return empty
+        if not candidates:
+            print("⚠️ No candidates found.")
+            return []
 
         def cosine_sim(a, b):
             return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
@@ -58,6 +67,7 @@ class LSHIndex(Index):
             for vector_id in candidates
         ]
         scored.sort(key=lambda x: -x[1])
+        print("📊 Top matches:", scored[:k])
         return scored[:k]
 
     def to_dict(self) -> dict[str, Any]:

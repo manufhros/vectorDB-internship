@@ -1,7 +1,10 @@
-from sqlalchemy.orm import Session
 from uuid import UUID
-from vector_store.app.db.models.lsh_index import LSHIndexModel
+
+from sqlalchemy.orm import Session
+
 from vector_store.app.db.lsh_index import LSHIndex
+from vector_store.app.db.models.lsh_index import LSHIndexModel
+
 
 class LSHIndexRepository:
     def __init__(self, db: Session):
@@ -10,18 +13,22 @@ class LSHIndexRepository:
     def get(self, library_id: UUID) -> LSHIndex | None:
         row = self.db.query(LSHIndexModel).filter_by(library_id=str(library_id)).first()
         if row:
-            return LSHIndex.from_dict({
-                "dim": row.dim,
-                "num_tables": row.num_tables,
-                "num_hashes": row.num_hashes,
-                "tables": row.tables,
-                "hyperplanes": row.hyperplanes,
-                "vectors": row.vectors,
-            })
+            return LSHIndex.from_dict(
+                {
+                    "dim": row.dim,
+                    "num_tables": row.num_tables,
+                    "num_hashes": row.num_hashes,
+                    "tables": row.tables,
+                    "hyperplanes": row.hyperplanes,
+                    "vectors": row.vectors,
+                }
+            )
         return None
 
     def save(self, library_id: UUID, index: LSHIndex):
-        existing = self.db.query(LSHIndexModel).filter_by(library_id=str(library_id)).first()
+        existing = (
+            self.db.query(LSHIndexModel).filter_by(library_id=str(library_id)).first()
+        )
         data = index.to_dict()
 
         if existing:
@@ -42,4 +49,8 @@ class LSHIndexRepository:
                 vectors=data["vectors"],
             )
             self.db.add(new)
+        self.db.commit()
+
+    def delete(self, library_id: UUID):
+        self.db.query(LSHIndexModel).filter_by(library_id=str(library_id)).delete()
         self.db.commit()

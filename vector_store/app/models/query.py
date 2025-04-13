@@ -1,11 +1,11 @@
-from pydantic import BaseModel, Field, model_validator
-from typing import List, Optional
 from uuid import UUID
+
+from pydantic import BaseModel, Field, model_validator
 
 
 class QueryRequest(BaseModel):
-    text: Optional[str] = None
-    embedding: Optional[List[float]] = None
+    text: str | None = None
+    embedding: list[float] | None = None
     k: int = Field(5, ge=1, le=50, example=5)
     filters: dict[str, str] | None = Field(
         default_factory=dict, example={"language": "en", "author": "support"}
