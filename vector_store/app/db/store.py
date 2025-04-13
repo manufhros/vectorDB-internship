@@ -127,7 +127,6 @@ class Store:
                     model="embed-english-v3.0",
                 )
                 embedding = response.embeddings[0]
-                print(embedding)  # Debugging output
             except Exception as err:
                 logger.exception("Error generating embedding with Cohere")
                 raise HTTPException(
@@ -273,8 +272,6 @@ class Store:
 
     # Query
     def query_chunks(self, library_id: UUID, query: QueryRequest) -> list[QueryResult]:
-        print("📥 Library ID used in query:", library_id)
-
         # 1. Verifies if the library exists
         library = self.library_repo.get(library_id)
         if not library:
@@ -339,17 +336,12 @@ class Store:
                 detail=f"Embedding must have dimension {EMBEDDING_DIM}, but got {len(embedding)}",
             )
 
-        print(
-            "🔍 Embedding used in query:", embedding[:5], "..."
-        )  # Solo los primeros 5 para no saturar
-
         # 5. Executes the query
         try:
             results = index.search(embedding, query.k)
 
             # Fallback to BruteForce if LSH returns no results
             if not results and isinstance(index, LSHIndex):
-                print("🔁 LSH returned no results. Falling back to BruteForce")
                 brute = IndexFactory.create("bruteforce")
                 chunks = self.chunk_repo.list_by_library(library_id)
                 for c in chunks:
@@ -360,10 +352,6 @@ class Store:
             raise HTTPException(
                 status_code=400, detail=f"Error during similarity search: {str(err)}"
             ) from err
-
-        print("📊 Index type:", type(index))
-        print("📦 Index contains vectors:", getattr(index, "vectors", None))
-        print("📌 Number of vectors in index:", len(index.vectors))
 
         # 6. Restores the chunks from the database
         output = []

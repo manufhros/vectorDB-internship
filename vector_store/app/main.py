@@ -3,10 +3,7 @@ import logging
 from fastapi import FastAPI
 
 from vector_store.app.api import chunks, documents, libraries, query
-from vector_store.app.db.base import Base
 from vector_store.app.db.database import init_db
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +14,7 @@ app = FastAPI(title="Vector Store API")
 @app.on_event("startup")
 def startup_event():
     init_db()
+
 
 # Rutas
 app.include_router(libraries.router)

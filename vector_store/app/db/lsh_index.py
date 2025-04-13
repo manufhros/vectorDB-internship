@@ -1,5 +1,4 @@
-# vector_store/app/db/lsh_index.py
-
+import logging
 from typing import Any
 from uuid import UUID
 
@@ -7,6 +6,7 @@ import numpy as np
 
 from vector_store.app.db.index import Index
 
+logger = logging.getLogger(__name__)
 
 class LSHIndex(Index):
     def __init__(self, dim: int, num_tables: int = 5, num_hashes: int = 10):
@@ -42,8 +42,6 @@ class LSHIndex(Index):
                     del table[k]
 
     def search(self, query_vector: list[float], k: int = 3) -> list[tuple[UUID, float]]:
-        print("🔍 Searching in LSH Index...")
-
         query_np = np.array(query_vector)
         query_np = query_np / np.linalg.norm(query_np)  # Normalize the query vector
         candidates = set()
@@ -52,11 +50,9 @@ class LSHIndex(Index):
             key = self._hash(query_np, planes)
             candidates.update(table.get(key, []))
 
-        print(f"🧠 Found {len(candidates)} candidate(s) in buckets")
-
         # If no candidates, return empty
         if not candidates:
-            print("⚠️ No candidates found.")
+            logger.info("No candidates in lsh, using brute force search instead")
             return []
 
         def cosine_sim(a, b):
@@ -67,7 +63,7 @@ class LSHIndex(Index):
             for vector_id in candidates
         ]
         scored.sort(key=lambda x: -x[1])
-        print("📊 Top matches:", scored[:k])
+
         return scored[:k]
 
     def to_dict(self) -> dict[str, Any]:
