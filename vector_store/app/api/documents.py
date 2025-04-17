@@ -27,22 +27,13 @@ def list_documents(library_id: UUID, db: Session = Depends(get_db)):
 @router.get("/{document_id}", response_model=Document)
 def get_document(library_id: UUID, document_id: UUID, db: Session = Depends(get_db)):
     store = Store(db)
-    doc = store.get_document(document_id)
-    if not doc or doc.library_id != library_id:
-        raise HTTPException(
-            status_code=404, detail="Document not found in this library"
-        )
-    return doc
+    return store.get_document(document_id, library_id)
 
 
 @router.delete("/{document_id}", status_code=204)
 def delete_document(library_id: UUID, document_id: UUID, db: Session = Depends(get_db)):
     store = Store(db)
-    doc = store.get_document(document_id)
-    if not doc or doc.library_id != library_id:
-        raise HTTPException(
-            status_code=404, detail="Document not found in this library"
-        )
+    store.get_document(document_id, library_id)  # Ensure it exists or raise 404
     store.delete_document(document_id)
 
 
@@ -54,9 +45,5 @@ def update_document(
     db: Session = Depends(get_db),
 ):
     store = Store(db)
-    doc = store.get_document(document_id)
-    if not doc or doc.library_id != library_id:
-        raise HTTPException(
-            status_code=404, detail="Document not found in this library"
-        )
+    store.get_document(document_id, library_id)  # Ensure it exists or raise 404
     return store.update_document(document_id, data)

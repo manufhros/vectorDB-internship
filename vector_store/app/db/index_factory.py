@@ -7,7 +7,7 @@ class IndexFactory:
     @staticmethod
     def create(index_type: str = "lsh", **kwargs) -> Index:
         if index_type == "lsh":
-            dim = kwargs.get("dim", 1024)
+            dim = kwargs.get("dim", 1024) # Delete
             return LSHIndex(dim=dim)
         elif index_type == "bruteforce":
             metric = kwargs.get("metric", "euclidean")

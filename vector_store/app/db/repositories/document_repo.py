@@ -23,8 +23,11 @@ class DocumentRepository:
         self.db.refresh(document)
         return document
 
-    def get(self, document_id: UUID) -> Document | None:
-        return self.db.query(Document).filter_by(id=str(document_id)).first()
+    def get(self, document_id: UUID, library_id: UUID | None = None) -> Document | None:
+        query = self.db.query(Document).filter_by(id=str(document_id))
+        if library_id:
+            query = query.filter_by(library_id=str(library_id))
+        return query.first()
 
     def list(self) -> list[Document]:
         return self.db.query(Document).all()
@@ -33,9 +36,9 @@ class DocumentRepository:
         return self.db.query(Document).filter_by(library_id=str(library_id)).all()
 
     def update(
-        self, document_id: UUID, data: DocumentUpdate, library_id: UUID | None = None
+        self, document_id: UUID, data: DocumentUpdate, library_id: UUID
     ) -> Document | None:
-        document = self.get(document_id)
+        document = self.get(document_id, library_id)
         if not document:
             return None
 

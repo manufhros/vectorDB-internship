@@ -4,7 +4,9 @@ from sqlalchemy.orm import Session
 
 from vector_store.app.db.models.library import Library
 from vector_store.app.models.library import LibraryCreate, LibraryUpdate
-
+from vector_store.app.db.cache import index_cache
+from vector_store.app.db.index_factory import LSHIndex
+from vector_store.app.constants import EMBEDDING_DIM
 
 class LibraryRepository:
     def __init__(self, db: Session):
@@ -16,6 +18,11 @@ class LibraryRepository:
             description=data.description,
             index_type=data.index_type,
         )
+        # Cache Management
+        if data.index_type == "lsh":
+            index = LSHIndex(dim=EMBEDDING_DIM)
+            index_cache[library.id] = index
+
         self.db.add(library)
         self.db.commit()
         self.db.refresh(library)

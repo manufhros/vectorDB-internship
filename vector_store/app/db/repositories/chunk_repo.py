@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from vector_store.app.db.models.chunk import Chunk
 from vector_store.app.db.models.document import Document
 from vector_store.app.models.chunk import ChunkCreate, ChunkUpdate
+from vector_store.app.db.cache import chunk_cache
 
 
 class ChunkRepository:
@@ -21,10 +22,17 @@ class ChunkRepository:
         self.db.add(chunk)
         self.db.commit()
         self.db.refresh(chunk)
+        # Cache the chunk in memory
+        chunk_cache[chunk.id] = chunk
         return chunk
 
     def get(self, chunk_id: UUID) -> Chunk | None:
-        return self.db.query(Chunk).filter_by(id=str(chunk_id)).first()
+        if chunk_id in chunk_cache:
+            return chunk_cache[chunk_id]
+        chunk = self.db.query(Chunk).filter_by(id=str(chunk_id)).first()
+        if chunk:
+            chunk_cache[chunk.id] = chunk
+        return chunk
 
     def list_by_document(self, document_id: UUID) -> list[Chunk]:
         return self.db.query(Chunk).filter_by(document_id=str(document_id)).all()
@@ -49,9 +57,14 @@ class ChunkRepository:
         if data.meta is not None:
             chunk.meta = data.meta
 
-        self.db.commit()
-        self.db.refresh(chunk)
-        return chunk
+        try:
+            self.db.commit()
+            self.db.refresh(chunk)
+            chunk_cache[chunk_id] = chunk  # Update cache after success
+            return chunk
+        except Exception as e:
+            self.db.rollback()
+            raise e
 
     def delete(self, chunk_id: UUID) -> bool:
         chunk = self.get(chunk_id)
@@ -59,4 +72,5 @@ class ChunkRepository:
             return False
         self.db.delete(chunk)
         self.db.commit()
+        chunk_cache.pop(chunk_id, None)
         return True
