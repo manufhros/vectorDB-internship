@@ -8,6 +8,7 @@ from vector_store.app.db.index import Index
 
 logger = logging.getLogger(__name__)
 
+
 class LSHIndex(Index):
     def __init__(self, dim: int, num_tables: int = 5, num_hashes: int = 10):
         self.dim = dim

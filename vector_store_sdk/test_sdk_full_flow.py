@@ -1,21 +1,22 @@
-import pytest
 from uuid import UUID
+
 from vectorstore_client import VectorStoreClient
-from vectorstore_client.models.library import LibraryCreate, LibraryUpdate
-from vectorstore_client.models.document import DocumentCreate, DocumentUpdate
 from vectorstore_client.models.chunk import ChunkCreate, ChunkUpdate
-from vectorstore_client.models.query import QueryRequest
+from vectorstore_client.models.document import DocumentCreate, DocumentUpdate
+from vectorstore_client.models.library import LibraryCreate, LibraryUpdate
 
 
 def test_full_sdk_flow():
     client = VectorStoreClient("http://localhost:8000")
 
     # Create library
-    lib = client.create_library(LibraryCreate(
-        name="SDK Test Library",
-        description="Testing all SDK functionality",
-        index_type="lsh"
-    ))
+    lib = client.create_library(
+        LibraryCreate(
+            name="SDK Test Library",
+            description="Testing all SDK functionality",
+            index_type="lsh",
+        )
+    )
     assert "id" in lib
     lib_id = UUID(lib["id"])
 
@@ -43,7 +44,9 @@ def test_full_sdk_flow():
     assert str(fetched_doc["id"]) == str(doc_id)
 
     # Update document
-    updated_doc = client.update_document(lib_id, doc_id, DocumentUpdate(title="Updated Document"))
+    updated_doc = client.update_document(
+        lib_id, doc_id, DocumentUpdate(title="Updated Document")
+    )
     assert updated_doc["title"] == "Updated Document"
 
     # List documents
@@ -51,7 +54,9 @@ def test_full_sdk_flow():
     assert any(d["id"] == str(doc_id) for d in documents)
 
     # Create chunk
-    chunk = client.create_chunk(doc_id, ChunkCreate(text="Texto para prueba completa SDK"))
+    chunk = client.create_chunk(
+        doc_id, ChunkCreate(text="Texto para prueba completa SDK")
+    )
     chunk_id = UUID(chunk["id"])
 
     # Get chunk

@@ -1,15 +1,16 @@
 from uuid import UUID
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from vector_store.app.db.lsh_index import LSHIndex
-from vector_store.app.db.models.lsh_index import LSHIndexModel
-from vector_store.app.db.cache import index_cache
 import vector_store.app.db.index_factory as IndexFactory
-from fastapi import HTTPException
 from vector_store.app.constants import EMBEDDING_DIM
+from vector_store.app.db.cache import index_cache
+from vector_store.app.db.lsh_index import LSHIndex
 from vector_store.app.db.models.chunk import Chunk
 from vector_store.app.db.models.library import Library
+from vector_store.app.db.models.lsh_index import LSHIndexModel
+
 
 class LSHIndexRepository:
     def __init__(self, db: Session):
@@ -68,7 +69,6 @@ class LSHIndexRepository:
         self.db.query(LSHIndexModel).filter_by(library_id=str(library_id)).delete()
         self.db.commit()
 
-
     def insert(self, library_id: UUID, chunk_id: UUID, embedding: list[float]):
         index = index_cache.get(library_id)
         if not index:
@@ -87,14 +87,12 @@ class LSHIndexRepository:
         if isinstance(index, LSHIndex):
             self.save(library_id, index)
 
-
     def remove(self, library_id: UUID, chunk_id: UUID):
         index = index_cache.get(library_id)
         if index:
             index.remove(chunk_id)
             if isinstance(index, LSHIndex):
                 self.save(library_id, index)
-
 
     def get_or_create(self, library: Library, chunks: list[Chunk]) -> LSHIndex:
         index = index_cache.get(library.id)

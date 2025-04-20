@@ -2,10 +2,10 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from vector_store.app.db.cache import chunk_cache
 from vector_store.app.db.models.chunk import Chunk
 from vector_store.app.db.models.document import Document
 from vector_store.app.models.chunk import ChunkCreate, ChunkUpdate
-from vector_store.app.db.cache import chunk_cache
 
 
 class ChunkRepository:

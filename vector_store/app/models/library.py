@@ -19,6 +19,7 @@ class LibraryCreate(LibraryBase):
 class LibraryUpdate(BaseModel):
     name: str | None = Field(None, example="Updated Library Name")
     description: str | None = Field(None, example="Updated description")
+    index_type: str | None = None
 
 
 class Library(LibraryBase):

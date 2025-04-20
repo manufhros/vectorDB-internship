@@ -1,5 +1,6 @@
-import os
 import logging
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -15,7 +16,6 @@ engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
 
 # Import models to ensure they are registered with SQLAlchemy
-from vector_store.app.db import models  # noqa: E402
 
 
 def init_db():
